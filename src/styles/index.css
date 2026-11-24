@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --wine: #80113f;
+  --pink: #d92565;
+  --pink-button: #ce1f5c;
+  --light-pink: #f7b6cb;
+  --cream: #fff8f3;
+  --ink: #2b1426;
+  --muted: #684c60;
+  --border: #efdae3;
+  --blush: #fff0f5;
+}
+
+@layer base {
+  body { @apply m-0 antialiased; background: var(--cream); color: var(--ink); }
+  h1 { @apply text-3xl font-bold tracking-tight sm:text-4xl; color: var(--wine); }
+  h2 { @apply text-xl font-bold tracking-tight sm:text-2xl; }
+  h3 { @apply text-lg font-bold; }
+  :focus-visible { outline: 2px solid var(--wine); outline-offset: 3px; }
+  button, select { cursor: pointer; }
+  button:disabled { cursor: default; }
+  dt { color: var(--muted); }
+  p, dd, li, h1, h2, h3 { overflow-wrap: anywhere; }
+}
+
+@layer components {
+  .shell { @apply mx-auto w-full max-w-6xl px-4 sm:px-8; }
+  .site-header { background: white; border-bottom: 1px solid var(--border); }
+  .header-row { @apply flex min-h-16 flex-wrap items-center justify-between gap-3 py-2; }
+  .wordmark { @apply text-xl font-bold tracking-tight sm:text-2xl; color: var(--wine); }
+  .desktop-nav { @apply hidden items-center gap-6 md:flex; }
+  .desktop-nav a, .bottom-nav a, .profile-nav a { @apply inline-flex min-h-11 items-center justify-center gap-2 text-sm font-semibold; }
+  .desktop-nav [aria-current="page"], .bottom-nav [aria-current="page"], .profile-nav [aria-current="page"] { color: var(--wine); text-decoration: underline; text-underline-offset: .28em; }
+  .cart-link span { @apply inline-grid min-w-6 place-items-center rounded-full px-1.5 text-xs; background: var(--light-pink); color: var(--wine); }
+  .bottom-nav { @apply fixed inset-x-0 bottom-0 z-10 grid grid-cols-3 md:hidden; background: white; border-top: 1px solid var(--border); padding: .3rem .45rem max(.3rem, env(safe-area-inset-bottom)); }
+  .bottom-nav a { @apply px-1 text-center; }
+  .content { @apply min-h-[72vh] py-7 sm:py-10; }
+  .footer { @apply flex flex-wrap items-center justify-between gap-2 py-4 text-sm; color: var(--muted); border-top: 1px solid var(--border); }
+  .footer a { @apply inline-flex min-h-11 items-center underline underline-offset-4; }
+  .customer-layout { padding-bottom: calc(3.5rem + env(safe-area-inset-bottom)); }
+  .cart-toast { @apply fixed right-4 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-20 flex max-w-[calc(100%-2rem)] items-center gap-3 rounded-2xl px-3 py-2 shadow-lg md:bottom-5; background: var(--blush); color: var(--wine); border: 1px solid var(--border); }
+  .toast-check { @apply mr-1 inline-grid size-6 place-items-center rounded-full font-bold; background: var(--wine); color: white; }
+  .active-order-bar { @apply py-3; background: var(--blush); border-bottom: 1px solid var(--border); }
+  .active-order-heading { @apply flex flex-wrap items-center justify-between gap-2; }
+  .active-order-heading h2 { @apply text-base; color: var(--wine); }
+  .active-order-list { @apply grid max-h-[42dvh] gap-2 overflow-y-auto md:grid-cols-2; }
+  .active-order { @apply grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] gap-2 rounded-xl p-3; background: var(--cream); border: 1px solid var(--border); }
+  .active-order-icon { @apply grid size-8 place-items-center rounded-full font-bold; background: var(--wine); color: white; }
+  .active-order progress { @apply block h-2 w-full; accent-color: var(--wine); }
+  .push-option summary { @apply min-h-11 cursor-pointer rounded-xl px-3 py-2.5 font-semibold; background: var(--blush); color: var(--wine); }
+  .push-option p { @apply px-3 pt-2; }
+  .page-heading { @apply mb-6 space-y-2; }
+  .page-heading p, .hero-copy p, .product p { color: var(--muted); }
+  .narrow { @apply max-w-2xl; }
+  .stack { @apply space-y-4; }
+  .stack-small { @apply space-y-1; }
+  .panel { @apply min-w-0 rounded-2xl p-4 sm:p-6; background: white; border: 1px solid var(--border); }
+  .divided > * + * { border-top: 1px solid var(--border); }
+  .menu-hero { @apply grid items-center gap-2 rounded-3xl px-5 pt-6 sm:grid-cols-[1.2fr_1fr] sm:gap-5 sm:px-10 sm:pt-0; background: linear-gradient(120deg, #ffeaf2, #f9c9d9); }
+  .hero-copy { @apply space-y-4 sm:py-8; }
+  .hero-copy h1 { @apply text-4xl sm:text-5xl lg:text-6xl; }
+  .hero-copy p { @apply max-w-sm; }
+  .menu-hero > img { @apply mx-auto w-full max-w-48 object-contain sm:max-w-80; }
+  .menu-hero + .notice { @apply mt-4; }
+  .catalog-section { @apply mt-8 scroll-mt-4 space-y-4 sm:mt-10; }
+  .catalog-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
+  .product { @apply flex flex-col gap-0 overflow-hidden p-0 sm:p-0; }
+  .product-body { @apply flex flex-1 flex-col gap-2 p-4; }
+  .product h3 a:hover { text-decoration: underline; }
+  .product-actions { @apply mt-auto pt-3; }
+  .product-actions strong, .price, .checkout-total strong { color: var(--wine); @apply text-xl font-bold; }
+  .media-link { @apply block; }
+  .media-link:focus-visible { outline-offset: -4px; }
+  .product-image { @apply aspect-[4/3] w-full object-cover; }
+  .photo-placeholder { @apply object-contain; background: var(--blush); }
+  .product-detail { @apply grid items-center gap-6 md:grid-cols-2; }
+  .product-detail .product-image { @apply rounded-xl; }
+  .filters, .actions, .profile-nav { @apply flex flex-wrap gap-2; }
+  .profile-nav { @apply mb-5 gap-x-5; }
+  .filters button { @apply min-h-11 rounded-full px-4 text-sm font-semibold; border: 1px solid var(--border); background: white; color: var(--wine); }
+  .filters button[aria-pressed="true"] { background: var(--wine); color: white; border-color: var(--wine); }
+  .product-actions, .total, .line-item, .admin-heading { @apply flex flex-wrap items-center justify-between gap-3; }
+  .line-item { @apply py-3; }
+  .button { @apply inline-flex min-h-11 max-w-full items-center justify-center rounded-xl px-4 py-2 text-center text-sm font-bold; background: var(--pink-button); color: white; }
+  .button:hover { background: var(--wine); }
+  .button:disabled { background: #eee2e8; color: #624c5a; }
+  .secondary { border: 1px solid var(--border); background: white; color: var(--wine); }
+  .secondary:hover { background: var(--blush); }
+  .notice { @apply rounded-xl px-4 py-3; background: var(--blush); color: var(--wine); }
+  .badge { @apply inline-flex max-w-full rounded-full px-3 py-1 text-sm font-semibold; background: var(--blush); color: var(--wine); }
+  .badge-positive { background: #e8f3e9; color: #24543a; }
+  .badge-warning { background: #fff0d8; color: #693b12; }
+  .quantity { @apply inline-flex items-center gap-3; }
+  .quantity button { @apply size-11 rounded-xl text-xl font-bold; background: var(--blush); color: var(--wine); }
+  .quantity button:disabled { color: #775c6a; background: #f8f2f5; }
+  .field { @apply grid min-w-0 gap-2 font-semibold; }
+  .field input, .field select, .field textarea { @apply min-h-11 w-full min-w-0 rounded-xl bg-white px-3 py-2 font-normal; border: 1px solid #ad8e9e; }
+  .field-grid, .checkout-grid { @apply grid gap-4; }
+  .field-grid { @apply sm:grid-cols-2; }
+  .checkout-grid { @apply items-start lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]; }
+  .checkout-total { @apply pt-3 font-bold; border-top: 1px solid var(--border); }
+  .choice { @apply flex min-h-11 items-center gap-2; }
+  .choice input { @apply size-5 shrink-0; accent-color: var(--wine); }
+  legend { @apply mb-1 font-bold; }
+  .skip-link { @apply sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-30 focus:rounded-lg focus:bg-white focus:p-3; }
+  .empty-state { @apply grid justify-items-center py-9 text-center; }
+  .order-card { @apply grid items-center gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]; }
+  .order-card > * { justify-self: start; }
+  .order-card h3 a, .delivery-details a { text-decoration: underline; text-underline-offset: .2em; }
+  .timeline { @apply space-y-1; }
+  .timeline li { @apply relative min-h-9 py-1 pl-7; color: var(--muted); }
+  .timeline li::before { content: ""; @apply absolute left-1 top-2 size-3 rounded-full; border: 1px solid var(--wine); }
+  .timeline .reached::before { background: var(--wine); }
+  .timeline [aria-current] { color: var(--wine); font-weight: 700; }
+  .delivery-details { @apply flex items-center gap-3; }
+  .delivery-details img { @apply shrink-0 object-contain; max-height: 5rem; }
+  .loyalty-card { @apply grid items-center gap-5 sm:grid-cols-[1fr_auto]; }
+  .loyalty-card img { @apply mx-auto w-28 sm:w-44; }
+  .stamps { @apply grid max-w-sm grid-cols-5 gap-2 min-[460px]:grid-cols-9; }
+  .stamps li { @apply grid aspect-square place-items-center rounded-full text-sm font-semibold; border: 1px dashed var(--wine); color: var(--wine); }
+  .stamps .earned { background: var(--wine); color: white; }
+  .modal { @apply fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg overflow-auto; }
+  .modal::backdrop { background: rgb(43 20 38 / 48%); }
+  .admin-layout { @apply min-h-dvh lg:grid lg:grid-cols-[14rem_minmax(0,1fr)]; }
+  .admin-sidebar { @apply grid content-start gap-3 px-4 py-4 lg:min-h-dvh lg:px-5 lg:py-7; background: var(--wine); color: white; }
+  .admin-sidebar .wordmark { color: white; }
+  .admin-sidebar nav { @apply grid grid-cols-2 gap-1 min-[520px]:grid-cols-3 lg:grid-cols-1; }
+  .admin-sidebar nav a, .admin-exit { @apply flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold; }
+  .admin-sidebar a[aria-current="page"], .admin-sidebar nav a:hover { background: #a62658; }
+  .admin-sidebar :focus-visible { outline-color: white; }
+  .admin-exit { @apply underline underline-offset-4; }
+  .admin-content { @apply mx-auto w-full min-w-0 max-w-6xl px-4 py-6 sm:px-8 lg:py-9; }
+  .demo-label { @apply mb-4 text-sm font-semibold; color: var(--wine); }
+  .metrics { @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-4; }
+  .metrics dd { @apply text-xl font-bold; color: var(--wine); }
+  .admin-heading .page-heading { @apply mb-0; }
+  .admin-avatar { @apply mx-auto; }
+  .image-preview { @apply w-full max-w-48 overflow-hidden rounded-xl; }
+  .admin-order-item { @apply grid grid-cols-[4rem_minmax(0,1fr)] items-start gap-3 py-3 sm:grid-cols-[6rem_minmax(0,1fr)]; }
+  .admin-order-item .product-image { @apply rounded-lg; }
+}
+
+@media (min-width: 48rem) {
+  .customer-layout { padding-bottom: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .button, .filters button, .admin-sidebar nav a { transition: background-color 150ms ease, color 150ms ease; }
+}
