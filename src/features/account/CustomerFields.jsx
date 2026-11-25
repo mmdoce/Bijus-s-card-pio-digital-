@@ -1,13 +1,13 @@
 import { FormField } from '../../components/ui'
 import { money } from '../../lib/money'
 
-export function CustomerFields({ profile = {}, address = true, requiredAddress = false, areas = [], onDistrict }) {
+export function CustomerFields({ profile = {}, contact = true, address = true, preserveAddress = false, requiredAddress = false, areas = [], onDistrict }) {
   return <>
-    <div className="field-grid">
+    {contact && <div className="field-grid">
       <FormField label="Nome completo"><input name="name" autoComplete="name" required maxLength={100} defaultValue={profile.name} /></FormField>
       <FormField label="Telefone WhatsApp"><input name="phone" type="tel" autoComplete="tel" required maxLength={24} defaultValue={profile.phone} /></FormField>
-    </div>
-    <fieldset disabled={!address} hidden={!address} className={address ? 'stack' : undefined}>
+    </div>}
+    {(address || preserveAddress) && <fieldset disabled={!address} hidden={!address} className={address ? 'stack' : undefined}>
       <legend>Endereço</legend>
       <FormField label="Bairro"><select name="district" required={requiredAddress} defaultValue={profile.district ?? ''} onChange={event => onDistrict?.(event.target.value)}>
         <option value="">Selecione um bairro</option>
@@ -19,6 +19,6 @@ export function CustomerFields({ profile = {}, address = true, requiredAddress =
         <FormField label="Complemento"><input name="complement" autoComplete="address-line2" maxLength={100} defaultValue={profile.complement} /></FormField>
         <FormField label="Referência"><input name="reference" maxLength={160} defaultValue={profile.reference} /></FormField>
       </div>
-    </fieldset>
+    </fieldset>}
   </>
 }

@@ -1,8 +1,10 @@
 import { Route, Routes } from 'react-router'
 import { ActionLink, PageHeading } from '../components/ui'
-import { AuthPage, ProfilePage } from '../features/account/AccountPages'
+import { AuthPage, ConfirmEmailPage, PasswordResetPage, ProfilePage } from '../features/account/AccountPages'
+import { CustomerAccess } from '../features/account/AuthProvider'
 import { AdminAccess, AdminLogin } from '../features/admin/AdminAccess'
-import { AdminCollection, AdminDashboard, AdminOrderDetail, AdminSettings } from '../features/admin/AdminDemo'
+import { AdminPage, AdminSettings } from '../features/admin/AdminPages'
+import { AdminCatalog } from '../features/admin/AdminCatalog'
 import { CartPage } from '../features/cart/CartPage'
 import { CatalogPage, ProductPage } from '../features/catalog/CatalogPage'
 import { CheckoutPage } from '../features/checkout/CheckoutPage'
@@ -23,25 +25,30 @@ export function AppRoutes() {
         <Route path="login" element={<AuthPage key="login" title="Entrar" />} />
         <Route path="cadastro" element={<AuthPage key="register" title="Criar conta" />} />
         <Route path="recuperar-senha" element={<AuthPage key="recovery" title="Recuperar senha" />} />
-        <Route path="perfil" element={<ProfilePage />} />
-        <Route path="perfil/pedidos" element={<ProfilePage section="orders" />} />
-        <Route path="perfil/fidelidade" element={<ProfilePage section="loyalty" />} />
+        <Route path="confirmar-email" element={<ConfirmEmailPage />} />
+        <Route path="redefinir-senha" element={<PasswordResetPage />} />
+        <Route element={<CustomerAccess />}>
+          <Route path="perfil" element={<ProfilePage />} />
+          <Route path="perfil/pedidos" element={<ProfilePage section="orders" />} />
+          <Route path="perfil/fidelidade" element={<ProfilePage section="loyalty" />} />
+        </Route>
         <Route path="*" element={<><PageHeading title="Página não encontrada" /><ActionLink to="/">Voltar ao cardápio</ActionLink></>} />
       </Route>
       <Route path="admin" element={<AdminLayout />}>
         <Route path="login" element={<AdminLogin />} />
+        <Route path="redefinir-senha" element={<PasswordResetPage admin />} />
       </Route>
       <Route path="admin" element={<AdminAccess />}>
-        {import.meta.env.DEV && <Route element={<AdminLayout demo />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="pedidos/:id" element={<AdminOrderDetail />} />
-          <Route path="produtos" element={<AdminCollection key="catalog" collection="catalog" />} />
-          <Route path="categorias" element={<AdminCollection key="groups" collection="groups" />} />
-          <Route path="bairros" element={<AdminCollection key="areas" collection="areas" />} />
-          <Route path="historico" element={<AdminDashboard history />} />
+        <Route element={<AdminLayout panel />}>
+          <Route index element={<AdminPage />} />
+          <Route path="pedidos/:id" element={<AdminPage section="order" />} />
+          <Route path="produtos" element={<AdminCatalog key="products" section="products" />} />
+          <Route path="categorias" element={<AdminCatalog key="categories" section="categories" />} />
+          <Route path="bairros" element={<AdminPage section="areas" />} />
+          <Route path="historico" element={<AdminPage section="history" />} />
           <Route path="configuracoes" element={<AdminSettings />} />
-        </Route>}
-        <Route path="*" element={<ActionLink to="/admin">Voltar aos pedidos</ActionLink>} />
+          <Route path="*" element={<ActionLink to="/admin">Voltar aos pedidos</ActionLink>} />
+        </Route>
       </Route>
     </Routes>
   )

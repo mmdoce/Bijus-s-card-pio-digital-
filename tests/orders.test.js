@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { brazilianPhone, createOrder, expireOrder, loyaltyBalance, nextStatuses, updateOrder, whatsappMessage } from '../src/lib/orders.js'
 import { demoPixPayload } from '../src/lib/pix.js'
-import { products, neighborhoods } from '../src/mocks/store.js'
+const products = [{ id: 'acai-300', category: 'acai', name: 'Açaí 300 ml', price: 1400, available: true }]
+const neighborhoods = [{ id: 'centro', name: 'Centro', fee: 500 }]
 
 const now = 1_000_000
 const customer = {

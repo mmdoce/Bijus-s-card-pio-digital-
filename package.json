@@ -10,9 +10,11 @@
     "dev": "vite",
     "build": "vite build",
     "test": "node --test",
+    "supabase:check": "node scripts/check-supabase.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
     "qrcode": "^1.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

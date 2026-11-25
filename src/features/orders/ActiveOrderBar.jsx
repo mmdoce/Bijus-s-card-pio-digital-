@@ -2,11 +2,9 @@ import { useEffect, useState } from 'react'
 import { ActionLink, Button } from '../../components/ui'
 import { statusLabels } from '../../lib/orders'
 import { finalOrderVisibility, isFinalOrder, trackingView } from '../../lib/orderTracking'
-import { useDemoStore } from '../../mocks/DemoStore'
 import { OrderStatus } from './OrderPages'
 
-export function ActiveOrderBar() {
-  const { activeOrders, dismissOrder, customerSoundEnabled, toggleCustomerSound } = useDemoStore()
+export function ActiveOrderBar({ activeOrders, dismissOrder, customerSoundEnabled, toggleCustomerSound }) {
   const [audioError, setAudioError] = useState('')
   const [busy, setBusy] = useState(false)
   const [now, setNow] = useState(Date.now)

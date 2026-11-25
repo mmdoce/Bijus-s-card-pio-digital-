@@ -16,6 +16,11 @@ Prazo de sete dias. Cardápio mobile-first, responsivo, acessível, minimalista 
 - **Administração.** Login independente, detalhes com snapshots, confirmação financeira, histórico, produtos com imagem padrão e prévia de PNG, JPG ou WebP até 5 MB, categorias, bairros e taxas. A loja abre e fecha manualmente. Fechada, mantém cardápio visível e pedidos existentes disponíveis. A data não altera o estado. Indicadores de faturamento recebido, pedidos pagos, cancelamentos, ticket médio e mais vendidos.
 - **Fora do escopo.** iFood, WhatsApp automático, estoque numérico, agendamento, gateway de pagamento, financeiro completo, apps nativos e funcionários ou múltiplos níveis administrativos.
 
+## Produção sem dados demonstrativos
+
+- A produção inicia com a loja fechada, somente com as configurações técnicas. Produtos, categorias, fotos, preços, bairros e dados Pix serão cadastrados manualmente pela administração.
+- Na integração do frontend com o backend real, remover os mocks e qualquer fallback com dados fictícios. Preservar o design aprovado e apresentar estados vazios próprios para cardápio, gestão de categorias, produtos e bairros, clientes, pedidos, pagamentos e fidelidade. Distinguir lista vazia de carregamento, erro de comunicação e falta de configuração Pix.
+
 ## Decisões de negócio a confirmar
 
 - O protótipo aplica uma recompensa por pedido com a garrafa elegível de 300 ml no carrinho e preserva os carimbos excedentes. Falta definir se outras compras são elegíveis.

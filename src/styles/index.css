@@ -138,6 +138,8 @@
   .admin-heading .page-heading { @apply mb-0; }
   .admin-avatar { @apply mx-auto; }
   .image-preview { @apply w-full max-w-48 overflow-hidden rounded-xl; }
+  .catalog-admin-product { @apply grid min-w-0 grid-cols-[4rem_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[5.5rem_minmax(0,1fr)]; }
+  .catalog-thumb { @apply overflow-hidden rounded-xl; }
   .admin-order-item { @apply grid grid-cols-[4rem_minmax(0,1fr)] items-start gap-3 py-3 sm:grid-cols-[6rem_minmax(0,1fr)]; }
   .admin-order-item .product-image { @apply rounded-lg; }
 }

@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { paoDeMel } from '../../assets/mascote'
-import { ActionLink, Button, EmptyState, Notice, QuantityControl, StatusBadge } from '../../components/ui'
+import { ActionLink, Button, EmptyState, LoadingState, Notice, QuantityControl, StatusBadge } from '../../components/ui'
 import { money } from '../../lib/money'
-import { useDemoStore } from '../../mocks/DemoStore'
+import { useStore } from './StoreProvider'
 import { useCart } from '../cart/CartProvider'
 
 export function CategoryFilter({ categories, selected, onSelect }) {
@@ -26,6 +26,7 @@ export function ProductCard({ product, open, onAdd }) {
     <div className="product-body">
       <h3><Link to={'/produto/' + product.id}>{product.name}</Link></h3>
       <p>{product.description}</p>
+      {product.size && !product.name.toLowerCase().includes(product.size.toLowerCase()) && <p>{product.size}</p>}
       <div className="product-actions">
         <strong>{money(product.price)}</strong>
         <Button disabled={!open || !product.available} aria-label={open && product.available ? 'Adicionar ' + product.name : undefined} onClick={() => onAdd(product.id, 1)}>
@@ -38,34 +39,44 @@ export function ProductCard({ product, open, onAdd }) {
 
 export function CatalogPage() {
   const [category, setCategory] = useState('')
-  const { catalog, groups, settings } = useDemoStore()
+  const { catalog, groups, settings, loading, error, reload } = useStore()
   const { addProduct } = useCart()
-  const visible = catalog.filter(product => product.active !== false && (!category || product.category === category))
+  const selected = groups.some(group => group.id === category) ? category : ''
+  const visible = groups.filter(group => !selected || group.id === selected).map(group => ({
+    ...group, products: catalog.filter(product => product.category === group.id),
+  })).filter(group => group.products.length)
   return <>
     <section className="menu-hero">
       <div className="hero-copy">
-        <StatusBadge tone={settings.open ? 'positive' : 'warning'}>{settings.open ? 'Loja aberta' : 'Loja fechada'}</StatusBadge>
+        <StatusBadge tone={settings.open ? 'positive' : 'warning'}>{loading ? 'Consultando a loja' : error ? 'Loja indisponível' : settings.open ? 'Loja aberta' : 'Loja fechada'}</StatusBadge>
         <h1>Cardápio Biju’s Doce</h1>
         <p>Escolha seu açaí na garrafa ou um doce para entrega ou retirada.</p>
         <a className="button" href="#produtos">Ver produtos</a>
       </div>
       <img src={paoDeMel} alt="Biju segurando um pão de mel" width="1280" height="1229" fetchPriority="high" />
     </section>
-    {!settings.open && <Notice>A loja está fechada. O cardápio continua disponível para consulta.</Notice>}
+    {!loading && !error && !settings.open && <Notice>A loja está fechada. O cardápio continua disponível para consulta.</Notice>}
     <section id="produtos" className="catalog-section" aria-labelledby="catalog-title">
       <h2 id="catalog-title">Escolha seu pedido</h2>
-      <CategoryFilter categories={groups} selected={category} onSelect={setCategory} />
-      {visible.length ? <div className="catalog-grid">
-        {visible.map(product => <ProductCard key={product.id} product={product} open={settings.open} onAdd={addProduct} />)}
-      </div> : <EmptyState title="Nenhum produto nesta categoria" />}
+      {groups.length > 0 && <CategoryFilter categories={groups} selected={selected} onSelect={setCategory} />}
+      {loading ? <LoadingState>Carregando o cardápio…</LoadingState> : error ? <EmptyState title="Não foi possível carregar o cardápio">
+        <Button secondary onClick={reload}>Tentar novamente</Button>
+      </EmptyState> : visible.length ? visible.map(group => <section className="stack-small" key={group.id} aria-label={group.name}>
+        {!selected && <h3>{group.name}</h3>}
+        <div className="catalog-grid">
+          {group.products.map(product => <ProductCard key={product.id} product={product} open={settings.open} onAdd={addProduct} />)}
+        </div>
+      </section>) : <EmptyState title={selected ? 'Nenhum produto nesta categoria' : 'Nenhum produto publicado ainda'} />}
     </section>
   </>
 }
 
 export function ProductPage() {
   const { id } = useParams()
-  const { catalog, settings } = useDemoStore()
+  const { catalog, settings, loading, error } = useStore()
   const product = catalog.find(item => item.id === id && item.active !== false)
+  if (loading) return <LoadingState>Carregando o produto…</LoadingState>
+  if (error) return <EmptyState title="Não foi possível consultar o produto"><ActionLink to="/">Voltar ao cardápio</ActionLink></EmptyState>
   return product ? <ProductDetail key={id} product={product} open={settings.open} /> : <EmptyState title="Produto indisponível"><ActionLink to="/">Voltar ao cardápio</ActionLink></EmptyState>
 }
 
@@ -79,6 +90,7 @@ function ProductDetail({ product, open }) {
       <div className="stack">
         <h1>{product.name}</h1>
         <p>{product.description}</p>
+        {product.size && !product.name.toLowerCase().includes(product.size.toLowerCase()) && <p>{product.size}</p>}
         <p className="price">{money(product.price)} por unidade</p>
         <QuantityControl quantity={quantity} onChange={delta => setQuantity(value => Math.max(1, value + delta))} label={product.name} />
         <Button disabled={!open || !product.available} onClick={() => addProduct(product.id, quantity)}>

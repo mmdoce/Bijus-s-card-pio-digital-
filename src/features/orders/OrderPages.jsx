@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link } from 'react-router'
 import { entrega } from '../../assets/mascote'
 import { ActionLink, Button, EmptyState, FormField, Notice, PageHeading, StatusBadge } from '../../components/ui'
 import { money } from '../../lib/money'
 import { financeLabels, paymentLabel, statusLabels } from '../../lib/orders'
-import { useDemoStore } from '../../mocks/DemoStore'
 
 export function OrderStatus({ status }) {
   const tone = ['CANCELADO', 'REVISAO_MANUAL', 'AGUARDANDO_PAGAMENTO'].includes(status) ? 'warning'
@@ -70,13 +69,16 @@ function PixDetails({ order }) {
 }
 
 export function OrderPage({ payment = false }) {
-  const { token } = useParams()
-  const { findOrder, followGuestOrder, settings } = useDemoStore()
-  const order = findOrder(token)
-  useEffect(() => {
-    if (order && !order.accountId) followGuestOrder(token)
-  }, [followGuestOrder, order, token])
-  if (!order) return <EmptyState title="Pedido indisponível"><ActionLink to="/">Voltar ao cardápio</ActionLink></EmptyState>
+  return <section className="narrow">
+    <PageHeading title={payment ? 'Pagamento via Pix' : 'Acompanhamento do pedido'} />
+    <EmptyState title={payment ? 'Pagamentos indisponíveis nesta etapa' : 'Acompanhamento indisponível nesta etapa'}>
+      <ActionLink to="/">Voltar ao cardápio</ActionLink>
+    </EmptyState>
+  </section>
+}
+
+export function OrderDetails({ order, settings, payment = false }) {
+  const { token } = order
   const showPix = payment && order.payment === 'pix' && order.status === 'AGUARDANDO_PAGAMENTO'
   const showPixGuidance = order.payment === 'pix' && ['AGUARDANDO_PAGAMENTO', 'REVISAO_MANUAL'].includes(order.status)
   const { receipt } = order
@@ -85,7 +87,6 @@ export function OrderPage({ payment = false }) {
     <PageHeading title={showPix ? 'Pagamento via Pix' : 'Pedido ' + order.number} />
     <div className="checkout-grid">
       <div className="panel stack">
-        <Notice>Pedido demonstrativo.</Notice>
         <div><OrderStatus status={order.status} /></div>
         {showPix ? <PixDetails key={token} order={order} /> : <OrderTimeline order={order} />}
         {order.status === 'REVISAO_MANUAL' && <Notice>O prazo do Pix terminou. O pedido aguarda revisão da loja.</Notice>}

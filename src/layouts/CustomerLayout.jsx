@@ -1,7 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router'
 import { Button } from '../components/ui'
 import { useCart } from '../features/cart/CartProvider'
-import { ActiveOrderBar } from '../features/orders/ActiveOrderBar'
 
 function CustomerLinks({ count }) {
   return <>
@@ -25,9 +24,8 @@ export function CustomerLayout() {
         <nav className="desktop-nav" aria-label="Navegação principal"><CustomerLinks count={count} /></nav>
       </div>
     </header>
-    <ActiveOrderBar />
     <main id="conteudo" className="shell content"><Outlet /></main>
-    <footer className="shell footer"><span>Biju’s Doce</span>{import.meta.env.DEV && <Link to="/admin/login">Administração</Link>}</footer>
+    <footer className="shell footer"><span>Biju’s Doce</span></footer>
     <CustomerBottomNav count={count} />
     <div className={toast ? 'cart-toast' : undefined}>
       <div role="status">{toast && <span key={toast.id}><span className="toast-check" aria-hidden="true">✓</span> {toast.product} no carrinho.</span>}</div>
