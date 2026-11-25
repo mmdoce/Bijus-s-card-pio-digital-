@@ -4,6 +4,7 @@ import { ActionLink, Button, EmptyState, FormField, LoadingState, Notice, PageHe
 import { money } from '../../lib/money'
 import { brazilianPhone, customerFields, deliveryFeeFor, paymentLabel } from '../../lib/orders'
 import { checkoutPayload, failedBeforeOrderCreation, finishOrderAttempt, orderItemsInput, placeOrder, prepareOrderAttempt, quoteOrder, readOrderAttempt } from '../../lib/orderData'
+import { addGuestPushOrder } from '../notifications/pushData'
 import { rememberGuestOrder } from '../../lib/orderTracking'
 import { supabase, supabaseForSession } from '../../lib/supabase'
 import { useAuth } from '../account/AuthProvider'
@@ -73,7 +74,10 @@ export function CheckoutPage() {
         }))
       }
       const order = await placeOrder(client, attempt)
-      if (scope === 'guest') rememberGuestOrder(order.id, order.tracking_token)
+      if (scope === 'guest') {
+        rememberGuestOrder(order.id, order.tracking_token)
+        void addGuestPushOrder(client, order.id, order.tracking_token).catch(() => {})
+      }
       finishOrderAttempt(scope)
       consume(attempt.p_items)
       navigate((order.status === 'AGUARDANDO_PAGAMENTO' && order.pix_payload ? '/pagamento/' : '/pedido/') + order.id, { replace: true })

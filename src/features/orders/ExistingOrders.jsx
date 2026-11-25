@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router'
 import { ActionLink, Button, EmptyState, FormField, LoadingState, Modal, Notice, PageHeading, StatusBadge } from '../../components/ui'
 import { money } from '../../lib/money'
 import { isOrderId, orderError, performOrderAction } from '../../lib/orderData'
-import { createOrderSound } from '../../lib/orderSound'
 import { brazilianPhone, financeLabels, nextStatuses, paymentLabel, statusLabels, whatsappMessage } from '../../lib/orders'
 import { supabaseForSession } from '../../lib/supabase'
 import { useAuth } from '../account/AuthProvider'
+import { useAcknowledgeOrder } from '../notifications/NotificationCenter'
 import { OrderCard, OrderStatus } from './OrderPages'
 import { useOrderPolling } from './useOrderPolling'
 
@@ -48,37 +48,7 @@ function useOrders(admin, orderId, page = 0) {
 export function ExistingOrders({ admin = false }) {
   const [page, setPage] = useState(0)
   const { result } = useOrders(admin, undefined, page)
-  const [sound] = useState(() => createOrderSound({ notes: [740, 960], duration: 0.32 }))
-  const [enabled, setEnabled] = useState(false)
-  const [soundError, setSoundError] = useState(false)
-  const [newCount, setNewCount] = useState(0)
-  const last = useRef(null)
-  useEffect(() => {
-    if (!admin || !result?.data || page !== 0) return
-    const numbers = result.data.map(order => Number(order.public_number))
-    const newOrders = last.current === null ? [] : numbers.filter(number => number > last.current)
-    last.current = Math.max(last.current ?? 0, ...numbers)
-    if (newOrders.length) {
-      setNewCount(count => count + newOrders.length)
-      sound.play()
-    }
-  }, [admin, result, sound, page])
-  useEffect(() => () => sound.disable(), [sound])
   return <div className="stack">
-    {admin && <div className="actions">
-      <Button secondary onClick={async () => {
-        setSoundError(false)
-        if (enabled) { sound.disable(); setEnabled(false); return }
-        try {
-          const audible = await sound.enable()
-          setEnabled(audible)
-          setSoundError(!audible)
-        } catch { setSoundError(true) }
-      }}>{enabled ? 'Desativar som de novos pedidos' : 'Ativar som de novos pedidos'}</Button>
-      {newCount > 0 && <Button secondary onClick={() => setNewCount(0)}>Limpar aviso</Button>}
-    </div>}
-    {soundError && <Notice>O navegador não permitiu ativar o som.</Notice>}
-    {newCount > 0 && <p className="notice" role="status">{newCount === 1 ? '1 pedido novo' : newCount + ' pedidos novos'}</p>}
     {!result ? <LoadingState>Carregando pedidos…</LoadingState> : result.error
       ? <EmptyState title="Não foi possível consultar os pedidos" />
       : !result.data.length ? <EmptyState title={admin ? 'Nenhum pedido registrado' : 'Nenhum pedido na sua conta'} />
@@ -94,6 +64,7 @@ export function ExistingOrders({ admin = false }) {
 export function AdminExistingOrder() {
   const { id } = useParams()
   const { result, refresh, client } = useOrders(true, id)
+  useAcknowledgeOrder(result?.data?.id)
   const [dialog, setDialog] = useState(null)
   const [message, setMessage] = useState(null)
   const [busy, setBusy] = useState(false)

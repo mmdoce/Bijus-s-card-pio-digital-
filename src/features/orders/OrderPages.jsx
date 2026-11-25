@@ -5,6 +5,8 @@ import { ActionLink, Button, EmptyState, FormField, LoadingState, Notice, PageHe
 import { money } from '../../lib/money'
 import { financeLabels, paymentLabel, statusLabels } from '../../lib/orders'
 import { getOrder, isOrderId, orderView } from '../../lib/orderData'
+import { pushGuestOrders } from '../notifications/pushData'
+import { PushSettings } from '../notifications/PushSettings'
 import { isPrivateTrackingToken, readTrackingSession, rememberGuestOrder } from '../../lib/orderTracking'
 import { supabase, supabaseForSession } from '../../lib/supabase'
 import { useAuth } from '../account/AuthProvider'
@@ -79,7 +81,7 @@ export function OrderPage({ payment = false }) {
   const { session, user, loading } = useAuth()
   const { settings } = useStore()
   const legacy = isPrivateTrackingToken(token)
-  const privateToken = legacy ? token : readTrackingSession().guests[token]
+  const privateToken = legacy ? token : (readTrackingSession().guests[token] ?? pushGuestOrders()[token])
   const accessToken = privateToken ? null : user && session?.access_token
   const client = useMemo(() => supabase && (privateToken || accessToken) ? supabaseForSession(accessToken) : null, [accessToken, privateToken])
   const load = useCallback(async () => {
@@ -137,8 +139,9 @@ export function OrderDetails({ order, settings, payment = false, allowPayment = 
         <p className="total checkout-total"><span>Total</span><strong>{money(order.total)}</strong></p>
         <p>{order.total > 0 && paymentLabel(order.payment, order.method) + ' · '}{financeLabels[order.financialStatus]}</p>
         {!['CONCLUIDO', 'CANCELADO'].includes(order.status) && <details className="push-option">
-          <summary>Ativar notificações</summary>
-          <p>As notificações em segundo plano estarão disponíveis após a integração com o backend. Você já pode ativar sons enquanto o cardápio estiver aberto.</p>
+          <summary>Notificações do pedido</summary>
+          <PushSettings audience="customer" />
+          <ActionLink secondary to="/notificacoes">Configurar sons</ActionLink>
         </details>}
         {showPix ? <ActionLink to={'/pedido/' + token}>Ver acompanhamento</ActionLink>
           : allowPayment && order.status === 'AGUARDANDO_PAGAMENTO' && order.pixPayload ? <ActionLink to={'/pagamento/' + token}>Ver Pix</ActionLink>

@@ -4,6 +4,8 @@ import { AuthPage, ConfirmEmailPage, PasswordResetPage, ProfilePage } from '../f
 import { CustomerAccess } from '../features/account/AuthProvider'
 import { AdminAccess, AdminLogin } from '../features/admin/AdminAccess'
 import { AdminPage } from '../features/admin/AdminPages'
+import { AdminFinance } from '../features/admin/AdminFinance'
+import { NotificationSettings } from '../features/notifications/NotificationCenter'
 import { AdminSettings } from '../features/admin/AdminSettings'
 import { AdminAreas } from '../features/admin/AdminAreas'
 import { AdminCatalog } from '../features/admin/AdminCatalog'
@@ -21,6 +23,7 @@ export function AppRoutes() {
         <Route index element={<CatalogPage />} />
         <Route path="produto/:id" element={<ProductPage />} />
         <Route path="carrinho" element={<CartPage />} />
+        <Route path="notificacoes" element={<NotificationSettings />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="pagamento/:token" element={<OrderPage payment />} />
         <Route path="pedido/:token" element={<OrderPage />} />
@@ -47,6 +50,7 @@ export function AppRoutes() {
           <Route path="produtos" element={<AdminCatalog key="products" section="products" />} />
           <Route path="categorias" element={<AdminCatalog key="categories" section="categories" />} />
           <Route path="bairros" element={<AdminAreas />} />
+          <Route path="financeiro" element={<AdminFinance />} />
           <Route path="historico" element={<AdminPage section="history" />} />
           <Route path="configuracoes" element={<AdminSettings />} />
           <Route path="*" element={<ActionLink to="/admin">Voltar aos pedidos</ActionLink>} />

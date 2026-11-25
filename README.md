@@ -39,3 +39,32 @@ A configuração da CLI está em `supabase/config.jsonc`, gerada com `npx supaba
 - [Requisitos](docs/requirements.md)
 - [Arquitetura](docs/architecture.md)
 - [Proposta de banco de dados](docs/database.md)
+
+## Ativação do Web Push
+
+1. Com autorização, confirme que o projeto vinculado é `bijus-doce` (`cncaqtbptrjqguzqbmpr`). Rode `npx supabase@3.4.0 db push --remote --dry-run`, confira as migrações pendentes e aplique somente as autorizadas. O feed de notificações e as inscrições dependem de `20261125001100_web_push_notifications.sql`.
+2. Se ainda não houver um par VAPID, gere-o com `npx --package=web-push@3.6.7 web-push generate-vapid-keys --json`. Configure `VITE_WEB_PUSH_PUBLIC_KEY` no build do frontend. Nos secrets da Edge Function, configure `WEB_PUSH_VAPID_PUBLIC_KEY`, `WEB_PUSH_VAPID_PRIVATE_KEY`, `WEB_PUSH_VAPID_SUBJECT` (URL HTTPS do projeto ou contato `mailto:`) e `WEB_PUSH_DISPATCH_SECRET` (32 bytes aleatórios em hexadecimal). O Supabase injeta a credencial de serviço na função. [Secrets das Edge Functions](https://supabase.com/docs/guides/functions/secrets)
+3. Com autorização, publique com `npx supabase@3.4.0 functions deploy dispatch-web-push --remote=cncaqtbptrjqguzqbmpr --no-verify-jwt --use-api --yes`. A função autentica cada execução pelo segredo do agendador no cabeçalho `Authorization`. Guarde esse segredo no Vault com o nome `bijus_web_push_dispatch_secret`, habilite `pg_cron` e `pg_net` e configure o job abaixo. O job verifica a fila e a expiração de Pix a cada dois minutos. A função só é chamada quando há trabalho pronto. [Agendamento de Edge Functions](https://supabase.com/docs/guides/functions/schedule-functions)
+
+```sql
+select cron.schedule('bijus-dispatch-web-push', '*/2 * * * *', $job$
+  select net.http_post(
+    url := 'https://cncaqtbptrjqguzqbmpr.supabase.co/functions/v1/dispatch-web-push',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets
+                                    where name = 'bijus_web_push_dispatch_secret')
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 55000
+  )
+  where exists (
+    select 1 from private.notification_deliveries where state = 'pending' and next_attempt_at <= now()
+  ) or exists (
+    select 1 from public.payments p join public.orders o on o.id = p.order_id
+    where p.status = 'PENDENTE' and p.expires_at <= now() and o.status = 'AGUARDANDO_PAGAMENTO'
+  );
+$job$);
+```
+
+4. Sirva o frontend em HTTPS e mantenha `/push-worker.js`, `/notification-ledger.js` e `/manifest.webmanifest` acessíveis na origem do site. Valide inscrição, cancelamento, clique e recebimento com o site fechado em um ambiente de teste. No iPhone ou iPad, faça o teste pelo app adicionado à Tela de Início. O som de avisos do sistema é controlado pelo dispositivo. [Web Push no iOS e iPadOS](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/)

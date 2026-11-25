@@ -1,0 +1,11 @@
+{
+  "id": "/",
+  "name": "Biju’s Doce",
+  "short_name": "Biju’s Doce",
+  "start_url": "/",
+  "display": "standalone",
+  "icons": [
+    { "src": "/icons/bijus-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/bijus-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

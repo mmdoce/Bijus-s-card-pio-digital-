@@ -57,6 +57,9 @@
   .stack { @apply space-y-4; }
   .stack-small { @apply space-y-1; }
   .panel { @apply min-w-0 rounded-2xl p-4 sm:p-6; background: white; border: 1px solid var(--border); }
+  .notification-center { @apply mb-4; }
+  .notification-center summary { @apply cursor-pointer font-semibold; }
+  .notification-center ul { @apply mt-2 max-h-72 overflow-auto; }
   .divided > * + * { border-top: 1px solid var(--border); }
   .menu-hero { @apply grid items-center gap-2 rounded-3xl px-5 pt-6 sm:grid-cols-[1.2fr_1fr] sm:gap-5 sm:px-10 sm:pt-0; background: linear-gradient(120deg, #ffeaf2, #f9c9d9); }
   .hero-copy { @apply space-y-4 sm:py-8; }

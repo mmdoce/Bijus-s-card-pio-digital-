@@ -4,9 +4,7 @@ import { statusLabels } from '../../lib/orders'
 import { finalOrderVisibility, isFinalOrder, trackingView } from '../../lib/orderTracking'
 import { OrderStatus } from './OrderPages'
 
-export function ActiveOrderBar({ activeOrders, dismissOrder, customerSoundEnabled, toggleCustomerSound }) {
-  const [audioError, setAudioError] = useState('')
-  const [busy, setBusy] = useState(false)
+export function ActiveOrderBar({ activeOrders, dismissOrder }) {
   const [now, setNow] = useState(Date.now)
   const visible = activeOrders.filter(order => !isFinalOrder(order) || order.finishedAt + finalOrderVisibility > now)
   const nextHideAt = Math.min(...visible.filter(isFinalOrder).map(order => order.finishedAt + finalOrderVisibility))
@@ -19,27 +17,9 @@ export function ActiveOrderBar({ activeOrders, dismissOrder, customerSoundEnable
 
   if (!visible.length) return null
 
-  async function toggleSound() {
-    setBusy(true)
-    setAudioError('')
-    try {
-      await toggleCustomerSound()
-    } catch {
-      setAudioError('O navegador não permitiu ativar o som. Tente novamente pelo botão.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return <section className="active-order-bar" aria-label="Acompanhamento de pedidos">
     <div className="shell stack-small">
-      <div className="active-order-heading">
-        <h2>Seus pedidos</h2>
-        <Button secondary disabled={busy} onClick={toggleSound}>
-          {customerSoundEnabled ? 'Desativar sons' : 'Ativar sons'}
-        </Button>
-      </div>
-      {audioError && <p role="alert">{audioError}</p>}
+      <h2>Seus pedidos</h2>
       <ul className="active-order-list">
         {visible.map(order => {
           const view = trackingView(order)

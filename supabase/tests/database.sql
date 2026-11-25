@@ -30,6 +30,8 @@ declare
   replacement_id uuid;
   product_original text;
   image_id uuid;
+  guest_endpoint text := 'https://fcm.googleapis.com/fcm/send/fixture-guest';
+  claim record;
 begin
   insert into auth.users (id, email) values (customer_a, 'qa-a@example.test'), (customer_b, 'qa-b@example.test'), (admin_id, 'qa-admin@example.test');
   insert into public.admin_users (user_id) values (admin_id);
@@ -104,6 +106,8 @@ begin
 
   perform set_config('request.jwt.claims', jsonb_build_object('sub', admin_id)::text, true);
   assert public.is_admin();
+  perform public.register_web_push('https://fcm.googleapis.com/fcm/send/fixture-admin',
+    repeat('e',87), repeat('f',22), repeat('a',64), 'admin', '{}');
   update public.store_settings set is_open = true;
   assert found;
   update public.payment_settings set pix_key_type = 'email', pix_key = 'qa@example.test', receiver_name = 'QA BIJU', receiver_city = 'SAO PAULO';
@@ -145,6 +149,16 @@ begin
   assert public.track_guest_order(pix->>'tracking_token')->>'id' = pix_id::text;
   assert not (public.track_guest_order(pix->>'tracking_token') ? 'customer_phone');
   assert public.track_guest_order(repeat('a',64)) is null;
+  assert not has_function_privilege('public.claim_web_push()', 'execute');
+  begin
+    perform public.get_notification_feed(true, '-infinity', '{}');
+    raise exception 'anonymous admin notification access allowed';
+  exception when insufficient_privilege then null; end;
+  begin
+    perform public.register_web_push(guest_endpoint, repeat('e',87), repeat('f',22), repeat('b',64), 'guest', array[repeat('a',64)]);
+    raise exception 'invalid guest token subscribed';
+  exception when insufficient_privilege then null; end;
+  perform public.register_web_push(guest_endpoint, repeat('e',87), repeat('f',22), repeat('b',64), 'guest', array[pix->>'tracking_token']);
   begin
     perform public.place_order(guest_request, 'delivery', 'pix', contact, one_item, 'different');
     raise exception 'checkout replay with different payload allowed';
@@ -266,7 +280,36 @@ begin
   assert (select product_name = product_original and unit_price_cents = 1400 from public.order_items where order_id = receipt_id);
   assert (select customer_name = 'Cliente A' from public.orders where id = receipt_id);
   assert (select count(*) from public.notification_events) =
-    (select count(*) from public.order_status_history where revision > 0);
+    (select count(*) from public.order_status_history) + (select count(*) from public.loyalty_rewards);
+  execute 'set local role anon';
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+  assert not exists (select 1 from public.get_notification_feed(false, '-infinity', array[repeat('a',64)]));
+  assert exists (select 1 from public.get_notification_feed(false, '-infinity', array[pix->>'tracking_token'])
+    where order_id = pix_id and kind = 'expired');
+  begin
+    perform public.revoke_web_push(guest_endpoint, repeat('a',64));
+    raise exception 'revocation with an invalid device secret allowed';
+  exception when insufficient_privilege then null; end;
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', customer_b)::text, true);
+  assert not exists (select 1 from public.get_notification_feed(false, '-infinity', '{}') where order_id = receipt_id);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', customer_a)::text, true);
+  assert exists (select 1 from public.get_notification_feed(false, '-infinity', '{}') where order_id = receipt_id and kind = 'paid');
+  assert exists (select 1 from public.get_notification_feed(false, '-infinity', '{}') where kind = 'reward');
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', admin_id)::text, true);
+  assert exists (select 1 from public.get_notification_feed(true, '-infinity', '{}') where order_id = pix_id and kind = 'manual_review');
+  perform public.acknowledge_web_push('https://fcm.googleapis.com/fcm/send/fixture-admin', repeat('a',64), true,
+    array(select id from public.get_notification_feed(true, '-infinity', '{}') where order_id = pix_id and kind = 'new_order'));
+  execute 'reset role';
+  assert exists (select 1 from private.notification_deliveries d
+    join private.notification_payloads n on n.id = d.event_id
+    where n.order_id = pix_id and n.admin_kind = 'new_order' and d.state = 'sent');
+  execute 'set local role service_role';
+  select * into strict claim from public.claim_web_push() where endpoint = guest_endpoint and kind = 'expired';
+  assert not exists (select 1 from public.claim_web_push() where event_id = claim.event_id and subscription_id = claim.subscription_id);
+  perform public.finish_web_push(claim.event_id, claim.subscription_id, claim.lease, 'expired');
+  execute 'reset role';
+  assert (select revoked_at is not null from public.push_subscriptions where endpoint = guest_endpoint);
   begin
     update public.order_items set quantity = 100 where order_id = receipt_id;
     raise exception 'invalid persisted quantity accepted';

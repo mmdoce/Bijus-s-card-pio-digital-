@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
+import { NotificationInbox, NotificationProvider } from '../features/notifications/NotificationCenter'
+import { revokeBrowserPush } from '../features/notifications/pushData'
 import { Button } from '../components/ui'
 import { authClient, authError } from '../lib/auth'
 
@@ -10,7 +12,7 @@ function MenuLink({ className }) {
 }
 
 const adminLinks = [
-  ['', 'Pedidos'], ['produtos', 'Produtos'], ['categorias', 'Categorias'],
+  ['', 'Pedidos'], ['financeiro', 'Financeiro'], ['produtos', 'Produtos'], ['categorias', 'Categorias'],
   ['bairros', 'Bairros e taxas'], ['historico', 'Histórico'], ['configuracoes', 'Configurações'],
 ]
 
@@ -22,7 +24,9 @@ export function AdminSidebar() {
     <MenuLink className="admin-exit" />
     <Button secondary onClick={async () => {
       try {
-        const { error } = await authClient().auth.signOut({ scope: 'local' })
+        const client = authClient()
+        await revokeBrowserPush(client).catch(() => {})
+        const { error } = await client.auth.signOut({ scope: 'local' })
         if (error) throw error
       } catch (error) {
         setError(authError(error))
@@ -33,13 +37,14 @@ export function AdminSidebar() {
 }
 
 export function AdminLayout({ panel = false }) {
-  return panel ? <div className="admin-layout">
+  return panel ? <NotificationProvider audience="admin"><div className="admin-layout">
     <a className="skip-link" href="#admin-content">Ir para o conteúdo</a>
     <AdminSidebar />
     <main id="admin-content" className="admin-content">
+      <NotificationInbox />
       <Outlet />
     </main>
-  </div> : <>
+  </div></NotificationProvider> : <>
     <header className="site-header"><div className="shell header-row"><Link className="wordmark" to="/admin/login">Biju’s Doce</Link><MenuLink /></div></header>
     <main className="shell content"><Outlet /></main>
   </>

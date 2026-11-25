@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { NotificationSettings } from '../notifications/NotificationCenter'
 import { Button, EmptyState, FormField, LoadingState, Modal, Notice, PageHeading, StatusBadge } from '../../components/ui'
 import { pixKeyTypes } from '../../lib/pix'
 import { pixInput, readSettings, savePixSettings, saveStoreState } from './settingsData'
@@ -53,6 +54,7 @@ export function AdminSettings() {
       </section>
       <PixForm key={data.pix.id + ':' + data.pix.pix_key_type} pix={data.pix} onSubmit={savePix} busy={busy} />
     </>}
+    <NotificationSettings />
     {confirm !== null && <Modal title={confirm ? 'Abrir loja' : 'Fechar loja'} onClose={close}>
       <p>{confirm ? 'O cardápio mostrará a loja aberta. Quando o checkout estiver habilitado no servidor, clientes poderão enviar novos pedidos.' : 'O cardápio permanecerá visível e os pedidos existentes continuarão acessíveis.'}</p>
       {feedbackMessage}

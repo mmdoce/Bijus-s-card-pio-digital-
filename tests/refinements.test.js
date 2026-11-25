@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { createOrderSound } from '../src/lib/orderSound.js'
+import { playOrderSound, unlockOrderAudio } from '../src/lib/orderSound.js'
 import { isFinalOrder, observeOrderChanges, readTrackingSession, trackedOrders, trackingView } from '../src/lib/orderTracking.js'
 import { crc16, createDemoPixService, createPixPayload, validatePixReceiver } from '../src/lib/pix.js'
 
@@ -89,34 +89,37 @@ test('Mudanças de status ignoram carga inicial, duplicados, versões antigas e 
   assert.equal(observeOrderChanges(observation.snapshot, [next]).changed, false)
 })
 
-test('Serviço sonoro só toca após ativação e separa os canais do cliente e da administração', async () => {
-  let plays = 0
+test('Som aguarda desbloqueio, distingue cinco sinais e respeita o volume', async () => {
+  const waves = []
+  const volumes = []
   const original = globalThis.AudioContext
   globalThis.AudioContext = class {
     state = 'suspended'
     currentTime = 0
     destination = {}
+    addEventListener() {}
     async resume() { this.state = 'running' }
-    async suspend() { this.state = 'suspended' }
     createOscillator() {
-      return { frequency: { setValueAtTime() {} }, connect: node => node, start: () => plays++, stop() {} }
+      const notes = []
+      return { frequency: { setValueAtTime(note) { notes.push(note) } }, connect: node => node,
+        start() { waves.push([this.type, notes]) }, stop() {} }
     }
-    createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} } }
+    createGain() {
+      return { gain: { setValueAtTime() {}, linearRampToValueAtTime(peak) { volumes.push(peak) },
+        exponentialRampToValueAtTime() {} }, connect() {} }
+    }
   }
   try {
-    const customer = createOrderSound({ notes: [523, 659], duration: 0.28 })
-    const admin = createOrderSound({ notes: [660, 880], duration: 0.4 })
-    customer.play()
-    assert.equal(plays, 0)
-    assert.equal(await customer.enable(), true)
-    admin.play()
-    customer.play()
-    assert.equal(plays, 1)
-    await admin.enable()
-    customer.disable()
-    customer.play()
-    admin.play()
-    assert.equal(plays, 2)
+    assert.equal(playOrderSound({ sound: 'chime', volume: 50 }), false)
+    assert.equal(waves.length, 0)
+    assert.equal(await unlockOrderAudio(), true)
+    for (const sound of ['chime', 'bells', 'pulse', 'melody', 'signal']) {
+      assert.equal(playOrderSound({ sound, volume: 50 }), true)
+    }
+    assert.equal(new Set(waves.map(wave => JSON.stringify(wave))).size, 5)
+    assert.equal(volumes[0], 0.21)
+    assert.equal(playOrderSound({ sound: 'chime', volume: 0 }), false)
+    assert.equal(waves.length, 5)
   } finally {
     globalThis.AudioContext = original
   }

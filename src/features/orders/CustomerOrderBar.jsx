@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { getOrder, orderView } from '../../lib/orderData'
-import { createOrderSound } from '../../lib/orderSound'
-import { finalOrderVisibility, observeOrderChanges, readTrackingSession, writeTrackingSession } from '../../lib/orderTracking'
+import { pushGuestOrders } from '../notifications/pushData'
+import { finalOrderVisibility, readTrackingSession, writeTrackingSession } from '../../lib/orderTracking'
 import { supabase, supabaseForSession } from '../../lib/supabase'
 import { useAuth } from '../account/AuthProvider'
 import { ActiveOrderBar } from './ActiveOrderBar'
@@ -15,12 +15,9 @@ export function CustomerOrderBar() {
   const userId = user?.id
   const client = useMemo(() => supabase ? supabaseForSession(token) : null, [token])
   const visitor = useMemo(() => supabase ? supabaseForSession(null) : null, [])
-  const [sound] = useState(() => createOrderSound({ notes: [620, 780], duration: 0.25 }))
-  const [soundEnabled, setSoundEnabled] = useState(false)
   const [dismissed, setDismissed] = useState(() => readTrackingSession().dismissed)
-  const seen = useRef(new Map())
   const load = useCallback(async () => {
-    const guest = Object.entries(readTrackingSession().guests)
+    const guest = Object.entries({ ...pushGuestOrders(), ...readTrackingSession().guests })
     const guestOrders = guest.map(([id, privateToken]) => getOrder(visitor, id, privateToken))
     const mine = async () => {
       if (!userId) return []
@@ -36,24 +33,6 @@ export function CustomerOrderBar() {
   }, [client, userId, visitor])
   const { result } = useOrderPolling(load, Boolean(client && !loading && !recovery))
   const orders = result?.data ?? emptyOrders
-  useEffect(() => {
-    if (!result?.data) return
-    const { snapshot, changed } = observeOrderChanges(seen.current, orders)
-    for (const [id, record] of snapshot) seen.current.set(id, record)
-    if (changed) sound.play()
-  }, [orders, result, sound])
-  useEffect(() => () => sound.disable(), [sound])
-
-  async function toggleSound() {
-    if (soundEnabled) {
-      sound.disable()
-      setSoundEnabled(false)
-    } else {
-      if (!await sound.enable()) throw new Error('Áudio indisponível.')
-      setSoundEnabled(true)
-    }
-  }
-
   function dismissOrder(id) {
     const saved = readTrackingSession()
     const next = [...new Set([...dismissed, ...saved.dismissed, id])]
@@ -62,5 +41,5 @@ export function CustomerOrderBar() {
   }
 
   return <ActiveOrderBar activeOrders={orders.filter(order => !dismissed.includes(order.id))}
-    dismissOrder={dismissOrder} customerSoundEnabled={soundEnabled} toggleCustomerSound={toggleSound} />
+    dismissOrder={dismissOrder} />
 }

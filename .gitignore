@@ -3,3 +3,9 @@ dist/
 .env
 .env.*
 !.env.example
+.dev.vars
+.dev.vars.*
+.wrangler/
+*.pem
+*.key
+*.pfx

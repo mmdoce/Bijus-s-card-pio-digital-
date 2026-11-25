@@ -5,6 +5,7 @@ import { authClient, authError, emailRedirect } from '../../lib/auth'
 import { customerFields } from '../../lib/orders'
 import { useStore } from '../catalog/StoreProvider'
 import { ExistingOrders } from '../orders/ExistingOrders'
+import { revokeBrowserPush } from '../notifications/pushData'
 import { LoyaltyPanel } from './LoyaltyPanel'
 import { useAuth } from './AuthProvider'
 import { CustomerFields } from './CustomerFields'
@@ -202,7 +203,9 @@ export function ProfilePage({ section = 'profile' }) {
 
   async function logout() {
     try {
-      const { error } = await authClient().auth.signOut({ scope: 'local' })
+      const client = authClient()
+      await revokeBrowserPush(client).catch(() => {})
+      const { error } = await client.auth.signOut({ scope: 'local' })
       if (error) throw error
     } catch (error) {
       setFeedback({ kind: 'logout', text: authError(error), error: true })
@@ -217,6 +220,7 @@ export function ProfilePage({ section = 'profile' }) {
     <PageHeading title={titles[section]} />
     <nav className="profile-nav" aria-label="Área do cliente">
       <NavLink to="/perfil" end>Dados e endereços</NavLink><NavLink to="/perfil/pedidos">Histórico</NavLink><NavLink to="/perfil/fidelidade">Fidelidade</NavLink>
+      <NavLink to="/notificacoes">Notificações</NavLink>
       <Button secondary onClick={logout}>Sair da conta</Button>
     </nav>
     {message('logout')}

@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router'
 import { Button } from '../components/ui'
 import { useCart } from '../features/cart/CartProvider'
+import { NotificationInbox, NotificationProvider } from '../features/notifications/NotificationCenter'
 import { CustomerOrderBar } from '../features/orders/CustomerOrderBar'
 
 function CustomerLinks({ count }) {
@@ -17,7 +18,7 @@ export function CustomerBottomNav({ count }) {
 
 export function CustomerLayout() {
   const { count, toast, dismissToast } = useCart()
-  return <div className="customer-layout">
+  return <NotificationProvider audience="customer"><div className="customer-layout">
     <a className="skip-link" href="#conteudo">Ir para o conteúdo</a>
     <header className="site-header">
       <div className="shell header-row">
@@ -26,12 +27,12 @@ export function CustomerLayout() {
       </div>
     </header>
     <CustomerOrderBar />
-    <main id="conteudo" className="shell content"><Outlet /></main>
-    <footer className="shell footer"><span>Biju’s Doce</span></footer>
+    <main id="conteudo" className="shell content"><NotificationInbox /><Outlet /></main>
+    <footer className="shell footer"><span>Biju’s Doce</span> <Link to="/notificacoes">Notificações</Link></footer>
     <CustomerBottomNav count={count} />
     <div className={toast ? 'cart-toast' : undefined}>
       <div role="status">{toast && <span key={toast.id}><span className="toast-check" aria-hidden="true">✓</span> {toast.product} no carrinho.</span>}</div>
       {toast && <Button secondary aria-label="Fechar confirmação do carrinho" onClick={dismissToast}>×</Button>}
     </div>
-  </div>
+  </div></NotificationProvider>
 }

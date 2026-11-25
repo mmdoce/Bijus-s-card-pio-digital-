@@ -1,0 +1,11 @@
+/push-worker.js
+  Cache-Control: no-cache
+
+/notification-ledger.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
