@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { NavLink, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
-import { beijo } from '../../assets/mascote'
 import { ActionLink, Button, EmptyState, FormField, LoadingState, Notice, PageHeading } from '../../components/ui'
 import { authClient, authError, emailRedirect } from '../../lib/auth'
 import { customerFields } from '../../lib/orders'
 import { useStore } from '../catalog/StoreProvider'
+import { ExistingOrders } from '../orders/ExistingOrders'
+import { LoyaltyPanel } from './LoyaltyPanel'
 import { useAuth } from './AuthProvider'
 import { CustomerFields } from './CustomerFields'
 import { contactDetails, saveCustomerAddress, saveCustomerContact } from './customerData'
@@ -238,9 +239,7 @@ export function ProfilePage({ section = 'profile' }) {
         {message('address')}
       </form>
     </div>)}
-    {section === 'orders' && <EmptyState title="Histórico indisponível nesta etapa"><ActionLink to="/">Ver cardápio</ActionLink></EmptyState>}
-    {section === 'loyalty' && <EmptyState title="Cartão de carimbos indisponível nesta etapa" image={beijo}>
-      <p>Cada unidade paga de açaí vale um carimbo. Com nove, ganhe uma garrafa de 300 ml na próxima compra elegível.</p>
-    </EmptyState>}
+    {section === 'orders' && <ExistingOrders />}
+    {section === 'loyalty' && <LoyaltyPanel />}
   </section>
 }

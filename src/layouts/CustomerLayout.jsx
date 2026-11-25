@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router'
 import { Button } from '../components/ui'
 import { useCart } from '../features/cart/CartProvider'
+import { CustomerOrderBar } from '../features/orders/CustomerOrderBar'
 
 function CustomerLinks({ count }) {
   return <>
@@ -24,6 +25,7 @@ export function CustomerLayout() {
         <nav className="desktop-nav" aria-label="Navegação principal"><CustomerLinks count={count} /></nav>
       </div>
     </header>
+    <CustomerOrderBar />
     <main id="conteudo" className="shell content"><Outlet /></main>
     <footer className="shell footer"><span>Biju’s Doce</span></footer>
     <CustomerBottomNav count={count} />

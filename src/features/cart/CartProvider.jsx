@@ -55,7 +55,19 @@ export function CartProvider({ children }) {
     return () => clearTimeout(timer)
   }, [toast])
 
-  return <CartContext.Provider value={{ items, count, subtotal, changeQuantity, addProduct, toast, dismissToast: () => setToast(null), clear: () => setQuantities({}) }}>{children}</CartContext.Provider>
+  function consume(purchased) {
+    setQuantities(previous => {
+      const next = { ...previous }
+      for (const { product_id, quantity } of purchased) {
+        const remaining = (next[product_id] ?? 0) - quantity
+        if (remaining > 0) next[product_id] = remaining
+        else delete next[product_id]
+      }
+      return next
+    })
+  }
+
+  return <CartContext.Provider value={{ items, count, subtotal, changeQuantity, addProduct, toast, dismissToast: () => setToast(null), consume }}>{children}</CartContext.Provider>
 }
 
 export function useCart() {

@@ -1,9 +1,15 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, Navigate, useParams } from 'react-router'
 import { entrega } from '../../assets/mascote'
-import { ActionLink, Button, EmptyState, FormField, Notice, PageHeading, StatusBadge } from '../../components/ui'
+import { ActionLink, Button, EmptyState, FormField, LoadingState, Notice, PageHeading, StatusBadge } from '../../components/ui'
 import { money } from '../../lib/money'
 import { financeLabels, paymentLabel, statusLabels } from '../../lib/orders'
+import { getOrder, isOrderId, orderView } from '../../lib/orderData'
+import { isPrivateTrackingToken, readTrackingSession, rememberGuestOrder } from '../../lib/orderTracking'
+import { supabase, supabaseForSession } from '../../lib/supabase'
+import { useAuth } from '../account/AuthProvider'
+import { useStore } from '../catalog/StoreProvider'
+import { useOrderPolling } from './useOrderPolling'
 
 export function OrderStatus({ status }) {
   const tone = ['CANCELADO', 'REVISAO_MANUAL', 'AGUARDANDO_PAGAMENTO'].includes(status) ? 'warning'
@@ -50,10 +56,10 @@ function PixDetails({ order }) {
   }, [order.expiresAt])
 
   return <div className="stack">
-    <Notice>Pix demonstrativo com chave fictícia. Use somente para testar o fluxo.</Notice>
+    <Notice>O prazo é da loja. Ao terminar, o pedido segue para revisão manual. Esse prazo não determina a validade bancária do Pix.</Notice>
     <p>Tempo restante <strong>{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</strong></p>
     {seconds > 0 && <>
-      {qr && <img src={qr} alt="QR Code do Pix demonstrativo" width="240" height="240" />}
+      {qr && <img src={qr} alt="QR Code do Pix" width="240" height="240" />}
       <FormField label="Pix copia e cola"><textarea readOnly value={payload} rows={4} /></FormField>
       <Button secondary onClick={async () => {
         try {
@@ -69,18 +75,38 @@ function PixDetails({ order }) {
 }
 
 export function OrderPage({ payment = false }) {
-  return <section className="narrow">
-    <PageHeading title={payment ? 'Pagamento via Pix' : 'Acompanhamento do pedido'} />
-    <EmptyState title={payment ? 'Pagamentos indisponíveis nesta etapa' : 'Acompanhamento indisponível nesta etapa'}>
-      <ActionLink to="/">Voltar ao cardápio</ActionLink>
-    </EmptyState>
-  </section>
+  const { token } = useParams()
+  const { session, user, loading } = useAuth()
+  const { settings } = useStore()
+  const legacy = isPrivateTrackingToken(token)
+  const privateToken = legacy ? token : readTrackingSession().guests[token]
+  const accessToken = privateToken ? null : user && session?.access_token
+  const client = useMemo(() => supabase && (privateToken || accessToken) ? supabaseForSession(accessToken) : null, [accessToken, privateToken])
+  const load = useCallback(async () => {
+    const data = await getOrder(client, token, privateToken)
+    if (legacy && data?.id) {
+      try { rememberGuestOrder(data.id, privateToken) } catch { return { data, legacy: true } }
+    }
+    return { data }
+  }, [client, token, privateToken, legacy])
+  const valid = legacy || isOrderId(token)
+  const { result } = useOrderPolling(load, Boolean(valid && client))
+  if (!valid) return <EmptyState title="Pedido indisponível"><ActionLink to="/">Ver cardápio</ActionLink></EmptyState>
+  if (!privateToken && !user && !loading) return <EmptyState title="Entre para consultar seu pedido"><ActionLink to="/login">Entrar</ActionLink></EmptyState>
+  if (!supabase) return <EmptyState title="Não foi possível consultar o pedido"><ActionLink to="/">Ver cardápio</ActionLink></EmptyState>
+  if (!result) return <LoadingState>Consultando o pedido…</LoadingState>
+  if (result.error || !result.data?.data) return <EmptyState title={result.error ? 'Não foi possível consultar o pedido' : 'Pedido indisponível'}>
+    <ActionLink to="/">Ver cardápio</ActionLink>
+  </EmptyState>
+  const order = orderView(result.data.data)
+  if (legacy && !result.data.legacy) return <Navigate replace to={(payment ? '/pagamento/' : '/pedido/') + order.id} />
+  return <OrderDetails settings={settings} payment={payment} allowPayment order={{ ...order, token }} />
 }
 
-export function OrderDetails({ order, settings, payment = false }) {
+export function OrderDetails({ order, settings, payment = false, allowPayment = false }) {
   const { token } = order
-  const showPix = payment && order.payment === 'pix' && order.status === 'AGUARDANDO_PAGAMENTO'
-  const showPixGuidance = order.payment === 'pix' && ['AGUARDANDO_PAGAMENTO', 'REVISAO_MANUAL'].includes(order.status)
+  const showPix = allowPayment && payment && order.payment === 'pix' && order.status === 'AGUARDANDO_PAGAMENTO' && order.pixPayload
+  const showPixGuidance = allowPayment && order.payment === 'pix' && ['AGUARDANDO_PAGAMENTO', 'REVISAO_MANUAL'].includes(order.status)
   const { receipt } = order
 
   return <section>
@@ -97,7 +123,7 @@ export function OrderDetails({ order, settings, payment = false }) {
         <div className="delivery-details">
           <img src={entrega} alt="" width="64" loading="lazy" />
           <div><h2>{order.method === 'delivery' ? 'Entrega' : 'Retirada'}</h2>
-            {order.method === 'delivery' ? <p>{receipt.street}, {receipt.streetNumber} · {receipt.district}</p> : <p>Retirada na loja, sem taxa.</p>}
+            {order.method === 'delivery' ? receipt && <p>{receipt.street}, {receipt.streetNumber} · {receipt.district}</p> : <p>Retirada na loja, sem taxa.</p>}
             {settings.contact && <p>Contato da loja <a href={'tel:' + settings.contact.replace(/[^+\d]/g, '')}>{settings.contact}</a></p>}
           </div>
         </div>
@@ -115,7 +141,7 @@ export function OrderDetails({ order, settings, payment = false }) {
           <p>As notificações em segundo plano estarão disponíveis após a integração com o backend. Você já pode ativar sons enquanto o cardápio estiver aberto.</p>
         </details>}
         {showPix ? <ActionLink to={'/pedido/' + token}>Ver acompanhamento</ActionLink>
-          : order.status === 'AGUARDANDO_PAGAMENTO' ? <ActionLink to={'/pagamento/' + token}>Ver Pix</ActionLink>
+          : allowPayment && order.status === 'AGUARDANDO_PAGAMENTO' && order.pixPayload ? <ActionLink to={'/pagamento/' + token}>Ver Pix</ActionLink>
             : <ActionLink to="/" secondary>Voltar ao cardápio</ActionLink>}
       </aside>
     </div>

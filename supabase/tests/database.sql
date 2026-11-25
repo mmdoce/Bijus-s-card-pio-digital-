@@ -1,5 +1,7 @@
 begin;
 set local plpgsql.check_asserts = on;
+-- Exercise the future checkout flow inside this rolled-back test only.
+grant execute on function public.place_order(uuid, public.receipt_method, public.payment_method, jsonb, jsonb, text) to anon, authenticated;
 
 do $test$
 declare
@@ -125,6 +127,14 @@ begin
 
   execute 'set local role anon';
   perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+  assert (public.quote_order('delivery', area, one_item)->>'total_cents')::int = 1900;
+  assert (public.quote_order('pickup', null, one_item)->>'delivery_fee_cents')::int = 0;
+  begin
+    perform public.place_order(gen_random_uuid(), 'delivery', 'pix', contact || '{"expected_total_cents":1800}', one_item);
+    raise exception 'stale quote accepted';
+  exception when invalid_parameter_value then
+    if sqlerrm <> 'checkout total changed' then raise; end if;
+  end;
   pix := public.place_order(guest_request, 'delivery', 'pix', contact, one_item);
   pix_id := (pix->>'id')::uuid;
   assert pix->>'status' = 'AGUARDANDO_PAGAMENTO' and pix->>'financial_status' = 'PENDENTE';
@@ -210,13 +220,16 @@ begin
   perform set_config('request.jwt.claims', jsonb_build_object('sub', customer_a)::text, true);
   assert (select stamp_balance = 2 from public.loyalty_accounts);
   assert (select count(*) = 1 from public.loyalty_rewards where state = 'available');
+  assert (public.quote_order('pickup', null, one_item)->>'discount_cents')::int = 1400;
+  assert (public.quote_order('delivery', area, one_item)->>'total_cents')::int = 500;
   reward := public.place_order(reward_request, 'pickup', 'pix', '{}', one_item);
   reward_id := (reward->>'id')::uuid;
   assert reward->>'financial_status' = 'ISENTO' and (reward->>'total_cents')::int = 0 and reward->>'pix_payload' is null;
   assert public.place_order(reward_request, 'pickup', 'pix', '{}', one_item) = reward;
   assert (public.place_order(gen_random_uuid(), 'pickup', 'receipt', '{}', one_item)->>'total_cents')::int = 1400;
   perform set_config('request.jwt.claims', jsonb_build_object('sub', admin_id)::text, true);
-  assert public.admin_order_action(reward_id, gen_random_uuid(), 'CANCELADO')->>'status' = 'CANCELADO';
+  assert public.admin_order_action(reward_id, gen_random_uuid(), 'CANCELADO', 'Cancelamento de teste')->>'status' = 'CANCELADO';
+  assert (select exists(select 1 from public.order_status_history where order_id = reward_id and reason = 'CANCELADO: Cancelamento de teste'));
 
   perform set_config('request.jwt.claims', jsonb_build_object('sub', customer_a)::text, true);
   waiting := public.place_order(gen_random_uuid(), 'delivery', 'pix', contact, one_item);

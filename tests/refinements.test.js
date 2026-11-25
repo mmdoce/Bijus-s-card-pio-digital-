@@ -59,7 +59,7 @@ test('Acompanhamento apresenta todos os estados e respeita retirada, entrega e f
 })
 
 test('Acompanhamento filtra pedidos por dono ou token privado da aba', () => {
-  const token = '123e4567-e12b-12d1-a456-426655440000'
+  const token = 'a'.repeat(64)
   const own = { id: 'own', accountId: 'customer' }
   const guest = { id: 'guest', token }
   const others = [{ id: 'other', accountId: 'other', token }, { id: 'other-guest', token: 'other-token' }]

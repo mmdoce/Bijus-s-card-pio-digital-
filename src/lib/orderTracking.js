@@ -1,3 +1,5 @@
+import { isOrderId } from './orderData.js'
+
 const messages = {
   AGUARDANDO_PAGAMENTO: ['◷', 'Estamos aguardando seu Pix.'],
   PAGAMENTO_EXPIRADO: ['⌛', 'Aguarde a conferência da nossa equipe.'],
@@ -8,7 +10,6 @@ const messages = {
   CONCLUIDO: ['✓', 'Obrigada pela preferência!'],
   CANCELADO: ['×', 'Seu pedido foi cancelado. Entre em contato com nossa loja.'],
 }
-
 export function isFinalOrder(order) {
   return ['CONCLUIDO', 'CANCELADO'].includes(order.status)
 }
@@ -40,23 +41,26 @@ export function readTrackingSession(storage) {
     const saved = JSON.parse((storage ?? globalThis.sessionStorage).getItem('bijus-tracking-session'))
     return {
       tokens: Array.isArray(saved?.tokens) ? saved.tokens.filter(isPrivateTrackingToken) : [],
-      dismissed: Array.isArray(saved?.dismissed) ? saved.dismissed.filter(isPrivateTrackingToken) : [],
+      dismissed: Array.isArray(saved?.dismissed) ? saved.dismissed.filter(isOrderId) : [],
+      guests: Object.fromEntries(Object.entries(saved?.guests ?? {}).filter(([id, token]) => isOrderId(id) && isPrivateTrackingToken(token))),
     }
   } catch {
-    return { tokens: [], dismissed: [] }
+    return { tokens: [], dismissed: [], guests: {} }
   }
 }
 
-export function writeTrackingSession(tracking) {
-  try {
-    sessionStorage.setItem('bijus-tracking-session', JSON.stringify(tracking))
-  } catch {
-    // Keep tracking in memory when browser storage is unavailable.
-  }
+export function writeTrackingSession(tracking, storage = globalThis.sessionStorage) {
+  storage.setItem('bijus-tracking-session', JSON.stringify(tracking))
 }
 
 export function isPrivateTrackingToken(token) {
-  return typeof token === 'string' && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(token)
+  return typeof token === 'string' && /^[0-9a-f]{64}$/.test(token)
+}
+
+export function rememberGuestOrder(id, token, storage = globalThis.sessionStorage) {
+  if (!isOrderId(id) || !isPrivateTrackingToken(token)) throw new Error('Não foi possível guardar o acesso ao pedido. Retome a tentativa nesta aba.')
+  const current = readTrackingSession(storage)
+  writeTrackingSession({ ...current, guests: { ...current.guests, [id]: token } }, storage)
 }
 
 export function observeOrderChanges(previous, orders) {

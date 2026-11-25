@@ -36,7 +36,13 @@ export function StoreProvider({ children }) {
 
   useEffect(() => {
     window.addEventListener('focus', reload)
-    return () => window.removeEventListener('focus', reload)
+    const timer = window.setInterval(() => {
+      if (supabase && !document.hidden) setRevision(value => value + 1)
+    }, 30_000)
+    return () => {
+      window.removeEventListener('focus', reload)
+      window.clearInterval(timer)
+    }
   }, [reload])
 
   useEffect(() => {

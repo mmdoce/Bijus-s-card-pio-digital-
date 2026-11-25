@@ -1,5 +1,7 @@
 begin;
 set local plpgsql.check_asserts = on;
+-- A rollback-only fixture order is needed to exercise image history protection.
+grant execute on function public.place_order(uuid, public.receipt_method, public.payment_method, jsonb, jsonb, text) to anon, authenticated;
 
 do $catalog$
 declare
@@ -66,6 +68,12 @@ begin
   perform set_config('request.jwt.claims', '{"role":"anon"}', true);
   assert (select count(*) = 0 from public.categories where id = category);
   assert (select count(*) = 0 from public.products where id = product);
+  begin
+    perform public.quote_order('pickup', null, jsonb_build_array(jsonb_build_object('product_id', product, 'quantity', 1)));
+    raise exception 'unavailable product accepted';
+  exception when invalid_parameter_value then
+    if sqlerrm <> 'product is unavailable' then raise; end if;
+  end;
   execute 'reset role';
 end;
 $catalog$;

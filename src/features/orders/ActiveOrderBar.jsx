@@ -55,7 +55,7 @@ export function ActiveOrderBar({ activeOrders, dismissOrder, customerSoundEnable
               {view.paymentMessage && <p><strong>{view.paymentMessage}</strong></p>}
               <progress value={view.progress} max={view.steps} aria-label={'Progresso do pedido ' + order.number} aria-valuetext={statusLabels[order.status]} />
               <div className="actions">
-                <ActionLink to={(order.status === 'AGUARDANDO_PAGAMENTO' ? '/pagamento/' : '/pedido/') + order.token} secondary>Ver detalhes</ActionLink>
+                <ActionLink to={(order.status === 'AGUARDANDO_PAGAMENTO' && order.pixPayload ? '/pagamento/' : '/pedido/') + order.id} secondary>Ver detalhes</ActionLink>
                 {terminal && <Button secondary aria-label={'Dispensar pedido ' + order.number} onClick={() => dismissOrder(order.id)}>Dispensar</Button>}
               </div>
             </div>
